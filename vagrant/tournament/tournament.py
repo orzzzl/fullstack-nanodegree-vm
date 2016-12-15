@@ -2,7 +2,6 @@
 # 
 # tournament.py -- implementation of a Swiss-system tournament
 #
-
 import psycopg2
 
 
@@ -13,14 +12,30 @@ def connect():
 
 def deleteMatches():
     """Remove all the match records from the database."""
+    db = connect()
+    c = db.cursor()
+    c.execute("DELETE FROM Matches")
+    db.commit()
+    db.close()
 
 
 def deletePlayers():
     """Remove all the player records from the database."""
-
+    db = connect()
+    c = db.cursor()
+    c.execute("DELETE FROM Players")
+    db.commit()
+    db.close()
 
 def countPlayers():
     """Returns the number of players currently registered."""
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT COUNT(*) FROM Players")
+    ans = c.fetchone()
+    db.close()
+    return ans[0]
+
 
 
 def registerPlayer(name):
@@ -32,6 +47,11 @@ def registerPlayer(name):
     Args:
       name: the player's full name (need not be unique).
     """
+    db = connect()
+    c = db.cursor()
+    c.execute("INSERT INTO Players (name) VALUES (%s)", (name,))
+    db.commit()
+    db.close()
 
 
 def playerStandings():
@@ -47,6 +67,14 @@ def playerStandings():
         wins: the number of matches the player has won
         matches: the number of matches the player has played
     """
+    db = connect()
+    c = db.cursor()
+    c.execute("SELECT Players.id AS id, name, wins, matches FROM Players, Wins, TotalGames\
+               WHERE Players.id = Wins.id and Players.id = TotalGames.id ORDER BY wins DESC")
+    ans = c.fetchall()
+    db.close()
+    return ans
+
 
 
 def reportMatch(winner, loser):
@@ -56,6 +84,11 @@ def reportMatch(winner, loser):
       winner:  the id number of the player who won
       loser:  the id number of the player who lost
     """
+    db = connect()
+    c = db.cursor()
+    c.execute("INSERT INTO Matches (winner_id, loser_id) VALUES (%s, %s)", (winner, loser))
+    db.commit()
+    db.close()
  
  
 def swissPairings():
@@ -73,5 +106,11 @@ def swissPairings():
         id2: the second player's unique id
         name2: the second player's name
     """
+    standing = playerStandings()
+    ans = []
+    for i in range(0, len(standing), 2):
+        ans.append((standing[i][0], standing[i][1], standing[i + 1][0], standing[i + 1][1]))
+    return ans
+
 
 
